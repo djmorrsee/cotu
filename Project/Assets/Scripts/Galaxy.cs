@@ -21,7 +21,7 @@ public class Galaxy : MonoBehaviour
 	public int seed;
 
 	// Private
-	
+	GameObject galaxy;
 	List<GeneratePlanet.PlanetData> planets;
 
 	////////////////////////////////
@@ -32,6 +32,7 @@ public class Galaxy : MonoBehaviour
 		Random.seed = seed;
 	
 		planets = new List<GeneratePlanet.PlanetData> ();
+		galaxy = new GameObject ("Galaxy");
 		FillGalaxy (numberOfPlanets);
 	}
 
@@ -63,27 +64,28 @@ public class Galaxy : MonoBehaviour
 	
 	bool AddPlanetToGalaxy ()
 	{
+		// Generate Random Planet Data
 		Vector2 newPlanetCoords = new Vector2 (Random.Range (-galaxyWidth, galaxyWidth), Random.Range (-galaxyWidth, galaxyWidth));
 		float radius = Random.Range (minPlanetRadius, maxPlanetRadius);
-		const int layers = 5;
-		const int verts = 64;
+		const int layers = 2;
+		const int verts = 128;
 		int mass = (int)radius;
-		
+	
 		GeneratePlanet gp = GetComponent<GeneratePlanet> ();
+		GeneratePlanet.PlanetData newPlanetData = gp.GeneratePlaneteData (newPlanetCoords, radius, mass, verts, layers);
 		
-		GeneratePlanet.PlanetData newPlanetData = gp.GeneratePlaneteData (newPlanetCoords, radius, layers, verts, layers);
-		
-		
+		// Check for planetary overlaps with our new planet		
 		bool canPlace = true;
 		foreach (GeneratePlanet.PlanetData pd in planets) {
 			if (AreOverlapping (newPlanetData, pd)) {
-				// Planet would collide, dont add
+				// Planet would collide, dont add it to the universe
 				canPlace = false;
 			}
 		}
 		if (canPlace) {
+			// Create the Planet
 			planets.Add (newPlanetData);
-			gp.GenerateAPlanet (newPlanetData);
+			gp.GenerateAPlanet (newPlanetData).transform.parent = galaxy.transform;
 		}
 		return canPlace;
 	}
