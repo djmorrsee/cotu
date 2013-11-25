@@ -1,0 +1,55 @@
+﻿//// Created By Daniel Morrissey
+////////////////////////////////
+
+using UnityEngine;
+using System.Collections;
+
+public class Test : MonoBehaviour
+{
+
+	////////////////////////////////
+	//// Class Variables 
+	////////////////////////////////
+	// Public
+
+
+
+	// Private
+	
+	
+
+	////////////////////////////////
+	//// Mono Methods
+	////////////////////////////////
+	void Start ()
+	{
+		
+	}
+
+	void Update ()
+	{
+
+	}
+	/*
+	void FixedUpdate () {
+
+	}
+
+	void OnGUI () {
+
+	}
+	*/
+	
+	////////////////////////////////
+	//// Class Methods 
+	////////////////////////////////
+	// Public
+
+
+
+	// Private
+
+
+
+	
+}
