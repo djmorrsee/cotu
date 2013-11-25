@@ -2,8 +2,8 @@
 using System.Collections;
 
 public class Gravity : MonoBehaviour
-{
-	
+{	
+	const float G = 1000f;
 	public float gravityRadius;
 	public float gravityForce;
 	
@@ -12,7 +12,7 @@ public class Gravity : MonoBehaviour
 		foreach (GameObject physicsObject in GameObject.FindGameObjectsWithTag("Dynamic")) {
 			float distance = Vector3.Distance (physicsObject.transform.position, transform.position);
 			if (distance < gravityRadius) {
-				float finalForce = gravityForce * ((gravityRadius - distance) / gravityRadius);
+				float finalForce = G * gravityForce / distance;
 				Vector3 direction = physicsObject.transform.position - transform.position;
 				direction = direction.normalized;
 				physicsObject.rigidbody2D.AddForce (new Vector2 (direction.x * finalForce, direction.y * finalForce));

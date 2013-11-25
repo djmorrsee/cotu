@@ -74,7 +74,7 @@ public class GeneratePlanet : MonoBehaviour
 		Gravity gravity = newPlanet.AddComponent<Gravity> ();
 		
 		gravity.gravityRadius = planetData.radius * 3;
-		gravity.gravityForce = -planetData.radius * planetData.mass;
+		gravity.gravityForce = -planetData.mass;
 		
 		renderer.material = mat;
 		
