@@ -73,7 +73,7 @@ public class GeneratePlanet : MonoBehaviour
 		MeshRenderer renderer = newPlanet.AddComponent<MeshRenderer> ();
 		Gravity gravity = newPlanet.AddComponent<Gravity> ();
 		gravity.gravityRadius = planetData.radius * 3;
-		gravity.gravityForce = -planetData.radius;
+		gravity.gravityForce = -planetData.radius/20;
 		
 		renderer.material = mat;
 		
