@@ -72,8 +72,9 @@ public class GeneratePlanet : MonoBehaviour
 		MeshFilter filter = newPlanet.AddComponent<MeshFilter> ();
 		MeshRenderer renderer = newPlanet.AddComponent<MeshRenderer> ();
 		Gravity gravity = newPlanet.AddComponent<Gravity> ();
+		
 		gravity.gravityRadius = planetData.radius * 3;
-		gravity.gravityForce = -planetData.radius/20;
+		gravity.gravityForce = -planetData.mass;
 		
 		renderer.material = mat;
 		
@@ -149,16 +150,36 @@ public class GeneratePlanet : MonoBehaviour
 				vertIndexA = 1 + planetData.verts * (planetData.layers - 1);
 		}
 		
+		// UV's
+		int uvi = 0;
+		Vector2[] uvs = new Vector2[newVertices.Count];
+		//		
+		while (uvi < uvs.Length) {
+			uvs [uvi] = new Vector2 (newVertices [uvi].x / (2f * planetData.radius) + 0.5f, newVertices [uvi].y / (2f * planetData.radius) + 0.5f);
+			uvi++;
+		}
+		
+		// Noise
 		for (int i = 1; i <= planetData.verts; ++i) {
 			newVertices [i] *= Random.Range (1, 1 + 0.75f / planetData.radius);
 		}
 		
+		
+		// Mesh
 		Mesh newMesh = new Mesh ();
 		newMesh.name = "PlanetMesh";
 		
 		newMesh.Clear ();
 		newMesh.vertices = newVertices.ToArray ();
 		newMesh.triangles = newEdges.ToArray ();
+		
+		
+		
+		
+		newMesh.uv = uvs;
+		
+		newMesh.RecalculateNormals ();
+		newMesh.RecalculateBounds ();
 		
 		filter.mesh = newMesh;
 		
