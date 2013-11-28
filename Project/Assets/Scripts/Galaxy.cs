@@ -68,7 +68,7 @@ public class Galaxy : MonoBehaviour
 		Vector2 newPlanetCoords = new Vector2 (Random.Range (-galaxyWidth, galaxyWidth), Random.Range (-galaxyWidth, galaxyWidth));
 		float radius = Random.Range (minPlanetRadius, maxPlanetRadius);
 		const int layers = 2;
-		const int verts = 128;
+		int verts = 2 * (int)Mathf.PI * (int)radius;
 		int mass = (int)radius;
 	
 		GeneratePlanet gp = GetComponent<GeneratePlanet> ();
