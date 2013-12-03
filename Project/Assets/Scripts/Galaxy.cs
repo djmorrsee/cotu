@@ -22,7 +22,7 @@ public class Galaxy : MonoBehaviour
 
 	// Private
 	GameObject galaxy;
-	List<GeneratePlanet.PlanetData> planets;
+	List<Planet> planets;
 
 	////////////////////////////////
 	//// Mono Methods
@@ -31,7 +31,7 @@ public class Galaxy : MonoBehaviour
 	{
 		Random.seed = seed;
 	
-		planets = new List<GeneratePlanet.PlanetData> ();
+		planets = new List<Planet> ();
 		galaxy = new GameObject ("Galaxy");
 		FillGalaxy (numberOfPlanets);
 	}
@@ -72,30 +72,30 @@ public class Galaxy : MonoBehaviour
 		int mass = (int)radius;
 	
 		GeneratePlanet gp = GetComponent<GeneratePlanet> ();
-		GeneratePlanet.PlanetData newPlanetData = gp.GeneratePlaneteData (newPlanetCoords, radius, mass, verts, layers);
+		Planet newPlanet = gp.GeneratePlaneteData (newPlanetCoords, radius, mass);
 		
 		// Check for planetary overlaps with our new planet		
 		bool canPlace = true;
-		foreach (GeneratePlanet.PlanetData pd in planets) {
-			if (AreOverlapping (newPlanetData, pd)) {
+		foreach (Planet pl in planets) {
+			if (AreOverlapping (newPlanet, pl)) {
 				// Planet would collide, dont add it to the universe
 				canPlace = false;
 			}
 		}
 		if (canPlace) {
 			// Create the Planet
-			planets.Add (newPlanetData);
-			gp.GenerateAPlanet (newPlanetData).transform.parent = galaxy.transform;
+			planets.Add (newPlanet);
+			gp.GenerateAPlanet (newPlanet).transform.parent = galaxy.transform;
 		}
 		return canPlace;
 	}
 
 	
-	bool AreOverlapping (GeneratePlanet.PlanetData A, GeneratePlanet.PlanetData B)
+	bool AreOverlapping (Planet A, Planet B)
 	{
-		float distance = (A.coordinates - B.coordinates).magnitude;
+		float distance = (A.Coordinates - B.Coordinates).magnitude;
         
-		return (A.radius + B.radius > distance);
+		return (A.Radius + B.Radius > distance);
 	}
 	
 	int FillGalaxy (int numberOfPlanets)

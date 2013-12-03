@@ -1,6 +1,7 @@
 ﻿//// Created By Daniel Morrissey
 ////////////////////////////////
 using UnityEngine;
+using System.Reflection;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -11,19 +12,11 @@ public class GeneratePlanet : MonoBehaviour
 	//// Class Variables 
 	////////////////////////////////
 	// Public
+	public int layerRadius = 1;
 	public Material mat;
 	
 	// Private
-	
-	public struct PlanetData
-	{
-		public Vector2 coordinates;
-		public int verts;
-		public float radius;
-		public int layers;
-		
-		public int mass;
-	};
+
 	
 
 	////////////////////////////////
@@ -31,7 +24,7 @@ public class GeneratePlanet : MonoBehaviour
 	////////////////////////////////
 	void Start ()
 	{
-		GenerateBPlanet (GeneratePlaneteData (Vector2.zero, 10, 5, 8, 5));
+//		GenerateBPlanet (GeneratePlaneteData (Vector2.zero, 10, 5));
 	}
 
 	void Update ()
@@ -55,327 +48,195 @@ public class GeneratePlanet : MonoBehaviour
 
 
 	// Private
-	public PlanetData GeneratePlaneteData (Vector2 coords, float radius, int mass, int numberOfVerts = 16, int layers = 5)
+	public Planet GeneratePlaneteData (Vector2 coords, float radius, int mass)
 	{
 		// Create Random Planet Data Based on Bounds
-		return new PlanetData{
-			coordinates = coords,
-			verts = numberOfVerts,
-			radius = radius, 
-			layers = layers,
-			mass = mass
+		return new Planet{
+			Coordinates = coords,
+			Radius = radius, 
+			Mass = mass
 		};
 	}
 	
-	public GameObject GenerateBPlanet (PlanetData planetData)
+	public GameObject GenerateAPlanet (Planet planetData)
 	{
 		GameObject newPlanet = new GameObject ("Planet");
-		MeshFilter filter = newPlanet.AddComponent<MeshFilter> ();
-		MeshRenderer renderer = newPlanet.AddComponent<MeshRenderer> ();
-		Gravity gravity = newPlanet.AddComponent<Gravity> ();
+		AddComponentsToPlanetObject (ref newPlanet, planetData);
 		
-		gravity.gravityRadius = planetData.radius * 3;
-		gravity.gravityForce = -planetData.mass;
+		int layers = (int)(planetData.Radius / layerRadius);
+		
+		List<Vector3> newVertices = GeneratePlanetVertices (layers);
+		List<int> newFaces = GeneratePlanetEdges (layers);
+		Vector2[] uvs = GenerateUVs (newVertices, planetData.Radius);
+		
+		// Outter Layer Verts 
+		int outterLayerVertCount = layers * 4;
+		int lastVertOnSurface = newVertices.Count - 1;
+		int firstVertOnSurface = lastVertOnSurface - outterLayerVertCount + 1;
+		
+		// Noise  
+		PlanetDeformation (ref newVertices, layers, firstVertOnSurface, lastVertOnSurface);
+		
+		// Collision		
+		List<Vector2> collisionMesh = new List<Vector2> ();
+		for (int i = firstVertOnSurface; i <= lastVertOnSurface; ++i) {
+			collisionMesh.Add (newVertices [i]);
+		}	
+		
+		newPlanet.GetComponent<PolygonCollider2D> ().points = collisionMesh.ToArray ();
+		
+		// Mesh
+		Mesh newMesh = GenerateMesh (newVertices, newFaces, uvs);
+		newPlanet.GetComponent<MeshFilter> ().mesh = newMesh;
+				
+		// Position	
+		newPlanet.transform.position = planetData.Coordinates;
+		return newPlanet;
+	}
+	
+	Mesh GenerateMesh (List<Vector3> newVertices, List<int> newFaces, Vector2[] uvs)
+	{
+		// Mesh
+		Mesh newMesh = new Mesh ();
+		newMesh.name = "PlanetMesh";
+		
+		newMesh.Clear ();
+		newMesh.vertices = newVertices.ToArray ();
+		newMesh.triangles = newFaces.ToArray ();
+		
+		newMesh.uv = uvs;
+		
+		newMesh.RecalculateNormals ();
+		newMesh.RecalculateBounds ();
+		return newMesh;
+	
+	}
+	
+	void AddComponentsToPlanetObject (ref GameObject go, Planet _planetData)
+	{
+		MeshFilter filter = go.AddComponent<MeshFilter> ();
+		MeshRenderer renderer = go.AddComponent<MeshRenderer> ();
+		Gravity gravity = go.AddComponent<Gravity> ();
+		
+		Planet planetData = (Planet)go.AddComponent (_planetData.GetType ());
+		
+		foreach (FieldInfo f in _planetData.GetType().GetFields()) {
+			f.SetValue (planetData, f.GetValue (_planetData));
+		}
+		
+		gravity.gravityRadius = 3 * planetData.Radius;
+		gravity.gravityForce = -planetData.Mass;
 		
 		renderer.material = mat;
 		
-		PolygonCollider2D collider = newPlanet.AddComponent<PolygonCollider2D> ();
-		CircleCollider2D atmosphere = newPlanet.AddComponent<CircleCollider2D> ();
+		PolygonCollider2D collider = go.AddComponent<PolygonCollider2D> ();
+		CircleCollider2D atmosphere = go.AddComponent<CircleCollider2D> ();
 		atmosphere.isTrigger = true;
-		atmosphere.radius = planetData.radius * 3f;
-		
-		
+		atmosphere.radius = planetData.Radius * 3f;
+	}
+
+	List<Vector3> GeneratePlanetVertices (int layers)
+	{
 		// Vertices // 
 		List<Vector3> newVertices = new List<Vector3> ();
 		
 		newVertices.Add (Vector3.zero);
-		
-		float layerWidth = planetData.radius / planetData.layers;
-		int vertNumber = planetData.verts - (planetData.verts % 4);
-		print (vertNumber);
 
-		if (vertNumber < 4) {
-			Debug.LogError ("Increase Verts");
+		
+		for (int thisLayer = 1; thisLayer <= layers; thisLayer++) {
+			
+			int verticesForLayer = thisLayer * 4;
+			float degreesPerVertex = 360f / verticesForLayer;
+			float thisLayerRadius = thisLayer * layerRadius;
+			
+			for (int thisVertex = 0; thisVertex < verticesForLayer; thisVertex++) {
+				float vertexAngle = thisVertex * degreesPerVertex * 0.0174532f;
+				Vector3 vertexPosition = new Vector3 (Mathf.Cos (vertexAngle), Mathf.Sin (vertexAngle)) * thisLayerRadius;
+				newVertices.Add (vertexPosition);
+			}
+		}
+		return newVertices;
+	}	
+	
+	List <int> GeneratePlanetEdges (int layers)
+	{
+		// Edges //
+		List<int> newFaces = new List<int> ();
+		
+		int totalVerts = 0;
+		for (int thisLayer = 0; thisLayer < layers; ++thisLayer) {
+			int verticesThisLayer = 4 * (thisLayer + 1);
+			int verticesLastLayer = 4 * thisLayer;
+			
+			for (int thisQuadrent = 0; thisQuadrent < 4; ++thisQuadrent) {
+				int quadrentOffset = thisQuadrent * verticesThisLayer / 4;
+				
+				int startVertIndex = totalVerts + 1 + quadrentOffset;
+				
+				for (int innerFaceIndex = 0; innerFaceIndex < thisLayer; ++innerFaceIndex) {
+					int v1 = startVertIndex + innerFaceIndex;					
+					int v2 = v1 + 1;				
+					int v3 = v1 - verticesLastLayer - 1 * thisQuadrent;			
+					int v4 = v3 + 1;
+					
+					if (v4 > totalVerts) {
+						v4 -= 4 * thisLayer;
+					}
+					
+					newFaces.Add (v3);
+					newFaces.Add (v2);
+					newFaces.Add (v1);
+					
+					newFaces.Add (v4);
+					newFaces.Add (v2);
+					newFaces.Add (v3);
+				}	
+				
+				// End Face
+				if (thisLayer > 0) {
+					
+					int x1 = startVertIndex + thisLayer;
+					int x2 = x1 + 1;
+					int x3 = x1 - verticesLastLayer - thisQuadrent;
+					
+					if (x2 > totalVerts + verticesThisLayer) {
+						x2 -= 4 * (thisLayer + 1);
+						x3 = x2 - 4 * (thisLayer);
+					}
+					if (x3 == x1) {
+						x3 = 0;
+					}
+					
+					newFaces.Add (x3);
+					newFaces.Add (x2);
+					newFaces.Add (x1);
+				}
+				
+			}
+			totalVerts += verticesThisLayer;
+			
 		}		
-		
-		float layer = vertNumber / 4;
-		int vertIndex = vertNumber;
-		while (vertIndex >= 4) {
-			print (vertIndex);
-			float degreesPerVertex = 360f / vertNumber;
-			float layerRadius = layer * layerWidth;
-			for (int i = 0; i < vertIndex; ++i) {
-				float angle = i * degreesPerVertex * 0.0174532f;
-								
-				Vector3 position = new Vector3 (Mathf.Cos (angle), Mathf.Sin (angle)) * layerRadius;
-								
-				if (newVertices.Contains (position)) {
-					Debug.LogError ("Duplicate Vertex");
-				}
-				newVertices.Add (position);
-			}
-			vertIndex -= 4;
-			layer--;
-		}
-		
-		List<int> newEdges = new List<int> ();
-		
-		int vertIndexA, vertIndexB;
-		
-		
-		layer = vertNumber / 4;
-		vertIndex = vertNumber;
-		
-//		while (vertIndex >= 4) {
-		int x = 1;
-		int y = 2;
-		for (int i = 0; i < vertIndex; ++i) {
-			newEdges.Add (x);
-			newEdges.Add (y);
-			newEdges.Add (x + vertIndex);
-			
-			newEdges.Add (y);
-			newEdges.Add (y + vertIndex);
-			newEdges.Add (x + vertIndex);
-				
-			++x;
-			++y;
-			if (y > vertIndex)
-				y = 1;
-		}
-		
-//		}
-		
-//		for (int j = 1; j < planetData.layers; ++j) {
-//			vertIndexA = 1;
-//			vertIndexB = 2;
-//			int layerOffset = planetData.verts * (j - 1);
-//			
-//			for (int i = 0; i < planetData.verts; ++i) {
-//				newEdges.Add (vertIndexA + planetData.verts + layerOffset);
-//				newEdges.Add (vertIndexB + layerOffset);
-//				newEdges.Add (vertIndexA + layerOffset);
-//				
-//				newEdges.Add (vertIndexB + planetData.verts + layerOffset);
-//				newEdges.Add (vertIndexB + layerOffset);
-//				
-//				newEdges.Add (vertIndexA + planetData.verts + layerOffset);
-//				
-//				vertIndexA++;
-//				vertIndexB++;
-//				if (vertIndexB > planetData.verts) {
-//					vertIndexB = 1;
-//				}
-//			}
-//		}			
-		
-		// Connect the lowest layer to the center
-//		vertIndexA = 1 + planetData.verts * (planetData.layers - 1);
-//		vertIndexB = 2 + planetData.verts * (planetData.layers - 1);
-//		for (int i = 0; i < planetData.verts; ++i) {
-//			
-//			// Add Edges
-//			newEdges.Add (0);
-//			newEdges.Add (vertIndexB);
-//			newEdges.Add (vertIndexA);
-//			
-//			// Update vert index
-//			vertIndexA++;
-//			vertIndexB++;
-//			if (vertIndexB > planetData.verts * planetData.layers)
-//				vertIndexB = 1 + planetData.verts * (planetData.layers - 1);
-//			if (vertIndexA > planetData.verts * planetData.layers)
-//				vertIndexA = 1 + planetData.verts * (planetData.layers - 1);
-//		}
-		
+		return newFaces;	
+	}
+	
+	Vector2[] GenerateUVs (List<Vector3> vertices, float radius)
+	{
 		// UV's
 		int uvi = 0;
-		Vector2[] uvs = new Vector2[newVertices.Count];
+		Vector2[] uvs = new Vector2[vertices.Count];
 		//		
 		while (uvi < uvs.Length) {
-			uvs [uvi] = new Vector2 (newVertices [uvi].x / (2f * planetData.radius) + 0.5f, newVertices [uvi].y / (2f * planetData.radius) + 0.5f);
+			uvs [uvi] = new Vector2 (vertices [uvi].x / (2f * radius) + 0.5f, vertices [uvi].y / (2f * radius) + 0.5f);
 			uvi++;
 		}
-		
-		// Noise
-		for (int i = 1; i <= planetData.verts; ++i) {
-			newVertices [i] *= Random.Range (1, 1 + 0.75f / planetData.radius);
-		}
-		
-		
-		// Mesh
-		Mesh newMesh = new Mesh ();
-		newMesh.name = "PlanetMesh";
-		
-		newMesh.Clear ();
-		newMesh.vertices = newVertices.ToArray ();
-		newMesh.triangles = newEdges.ToArray ();
-		
-		
-		
-		
-		newMesh.uv = uvs;
-		
-		newMesh.RecalculateNormals ();
-		newMesh.RecalculateBounds ();
-		
-		filter.mesh = newMesh;
-		
-		List<Vector2> collisionMesh = new List<Vector2> ();
-		for (int i = 1; i <= planetData.verts; ++i) {
-			collisionMesh.Add (newVertices [i]);
-		}	
-		
-		collider.points = collisionMesh.ToArray ();
-		
-		newPlanet.transform.position = planetData.coordinates;
-		return newPlanet;
+		return uvs;
 	}
 	
-	
-	public GameObject GenerateAPlanet (PlanetData planetData)
+	void PlanetDeformation (ref List<Vector3> vertices, int layers, int start, int end)
 	{
-		GameObject newPlanet = new GameObject ("Planet");
-		MeshFilter filter = newPlanet.AddComponent<MeshFilter> ();
-		MeshRenderer renderer = newPlanet.AddComponent<MeshRenderer> ();
-		Gravity gravity = newPlanet.AddComponent<Gravity> ();
-		
-		gravity.gravityRadius = planetData.radius * 3;
-		gravity.gravityForce = -planetData.mass;
-		
-		renderer.material = mat;
-		
-		PolygonCollider2D collider = newPlanet.AddComponent<PolygonCollider2D> ();
-		CircleCollider2D atmosphere = newPlanet.AddComponent<CircleCollider2D> ();
-		atmosphere.isTrigger = true;
-		atmosphere.radius = planetData.radius * 3f;
-		
-		
-		// Vertices // 
-		List<Vector3> newVertices = new List<Vector3> ();
-	
-		newVertices.Add (Vector3.zero);
-		
-		float degreesPerVertex = 360f / (planetData.verts);		
-		float layerWidth = planetData.radius / planetData.layers;
-		
-		for (int i = 0; i < planetData.layers; ++i) {
-			float layerRadius = planetData.radius - layerWidth * i;
-			
-			for (int j = 0; j < planetData.verts; ++j) {
-				float angle = j * degreesPerVertex * 0.0174532f;
-				float noise = Random.Range (1, 1 + 5f / planetData.radius);
-				
-				Vector3 position = new Vector3 (Mathf.Cos (angle), Mathf.Sin (angle)) * layerRadius;
-				
-				if (newVertices.Contains (position)) {
-					Debug.LogError ("Duplicate Vertex");
-				}
-				newVertices.Add (position);
-			}
-		}
-		
-		List<int> newEdges = new List<int> ();
-		
-		int vertIndexA, vertIndexB;
-		
-		for (int j = 1; j < planetData.layers; ++j) {
-			vertIndexA = 1;
-			vertIndexB = 2;
-			int layerOffset = planetData.verts * (j - 1);
-			
-			for (int i = 0; i < planetData.verts; ++i) {
-				newEdges.Add (vertIndexA + planetData.verts + layerOffset);
-				newEdges.Add (vertIndexB + layerOffset);
-				newEdges.Add (vertIndexA + layerOffset);
-			
-				newEdges.Add (vertIndexB + planetData.verts + layerOffset);
-				newEdges.Add (vertIndexB + layerOffset);
-			
-				newEdges.Add (vertIndexA + planetData.verts + layerOffset);
-			
-				vertIndexA++;
-				vertIndexB++;
-				if (vertIndexB > planetData.verts) {
-					vertIndexB = 1;
-				}
-			}
-		}			
-		
-		// Connect the lowest layer to the center
-		vertIndexA = 1 + planetData.verts * (planetData.layers - 1);
-		vertIndexB = 2 + planetData.verts * (planetData.layers - 1);
-		for (int i = 0; i < planetData.verts; ++i) {
-
-			// Add Edges
-			newEdges.Add (0);
-			newEdges.Add (vertIndexB);
-			newEdges.Add (vertIndexA);
-
-			// Update vert index
-			vertIndexA++;
-			vertIndexB++;
-			if (vertIndexB > planetData.verts * planetData.layers)
-				vertIndexB = 1 + planetData.verts * (planetData.layers - 1);
-			if (vertIndexA > planetData.verts * planetData.layers)
-				vertIndexA = 1 + planetData.verts * (planetData.layers - 1);
-		}
-		
-		// UV's
-		int uvi = 0;
-		Vector2[] uvs = new Vector2[newVertices.Count];
-		//		
-		while (uvi < uvs.Length) {
-			uvs [uvi] = new Vector2 (newVertices [uvi].x / (2f * planetData.radius) + 0.5f, newVertices [uvi].y / (2f * planetData.radius) + 0.5f);
-			uvi++;
-		}
-		
-		// Noise
-		for (int i = 1; i <= planetData.verts; ++i) {
-			newVertices [i] *= Random.Range (1, 1 + 0.75f / planetData.radius);
-		}
-		
-		
-		// Mesh
-		Mesh newMesh = new Mesh ();
-		newMesh.name = "PlanetMesh";
-		
-		newMesh.Clear ();
-		newMesh.vertices = newVertices.ToArray ();
-		newMesh.triangles = newEdges.ToArray ();
-		
-		
-		
-		
-		newMesh.uv = uvs;
-		
-		newMesh.RecalculateNormals ();
-		newMesh.RecalculateBounds ();
-		
-		filter.mesh = newMesh;
-		
-		List<Vector2> collisionMesh = new List<Vector2> ();
-		for (int i = 1; i <= planetData.verts; ++i) {
-			collisionMesh.Add (newVertices [i]);
+		for (int i = start; i <= end; ++i) {
+			vertices [i] *= Random.Range (1, 1.04f);
 		}	
-		
-		collider.points = collisionMesh.ToArray ();
-		
-		newPlanet.transform.position = planetData.coordinates;
-		return newPlanet;
-		
-	}
-
-	float previousScale = 1;
-	private const float AccelLowPass = 0.5f;
-	float LowPassFilter (float x)
-	{
-		float _x = (x * AccelLowPass) + (previousScale * (1.0f - AccelLowPass));
-		previousScale = x;
-		print (string.Format ("0: {0}", (x - _x) / x));
-		return _x;
-	}
-
-
 	
+	}
 }
