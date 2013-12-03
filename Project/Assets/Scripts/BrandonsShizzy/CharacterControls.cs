@@ -23,12 +23,12 @@ public class CharacterControls : MonoBehaviour {
 		float deltaX = transform.position.x - test.position.x;
 		float deltaY = transform.position.y - test.position.y;
 		float standRot = Mathf.Atan2(deltaY, deltaX) * -180 / Mathf.PI;
+		//float standRot = -Vector3.Dot(transform.position, test.position);
 
-		JointAngleLimits2D limit = new JointAngleLimits2D();
-		limit.max = standRot+90;
-		limit.min = standRot+90;
-
-		rotationHinge.limits = limit;
+		//JointAngleLimits2D limit = new JointAngleLimits2D();
+		//limit.max = standRot+90;
+		//limit.min = standRot+90;
+		//rotationHinge.limits = limit;
 
 		float Axis1 = Input.GetAxis("Horizontal");
 		Vector3 relativeForce = transform.TransformDirection(Vector3.right);
