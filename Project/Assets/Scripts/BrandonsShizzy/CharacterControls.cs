@@ -10,25 +10,26 @@ public class CharacterControls : MonoBehaviour {
 	bool forward;
 	float wantPos, wantPosYR, wantPosYL;
 	public HingeJoint2D rotationHinge;
-
-	public Transform test;
+	Transform nearestPlanet;
+	bool ragdoll;
 	void Start () {
 		forward = true;
 		wantPos = legMovement;
 		startPosL = leftLegMove.connectedAnchor;
 		startPosR = rightLegMove.connectedAnchor;
+		InvokeRepeating("LookForPlanets", 0, 5);
 	}
 
 	void Update () {
-		float deltaX = transform.position.x - test.position.x;
-		float deltaY = transform.position.y - test.position.y;
-		float standRot = Mathf.Atan2(deltaY, deltaX) * -180 / Mathf.PI;
-		//float standRot = -Vector3.Dot(transform.position, test.position);
 
-		//JointAngleLimits2D limit = new JointAngleLimits2D();
-		//limit.max = standRot+90;
-		//limit.min = standRot+90;
-		//rotationHinge.limits = limit;
+		float deltaX = nearestPlanet.position.x - transform.position.x;
+		float deltaY = nearestPlanet.position.y - transform.position.y;
+		float standRot = Mathf.Atan2(deltaY, deltaX) * 180 / Mathf.PI + 90;
+
+		JointAngleLimits2D limit = new JointAngleLimits2D();
+		limit.max = standRot;
+		limit.min = standRot;
+		rotationHinge.limits = limit;
 
 		float Axis1 = Input.GetAxis("Horizontal");
 		Vector3 relativeForce = transform.TransformDirection(Vector3.right);
@@ -66,6 +67,36 @@ public class CharacterControls : MonoBehaviour {
 		}
 		if (Input.GetKeyUp ("space")) {
 			rigidbody2D.AddForce(relativeUp*jumpForce);
+		}
+		if(Input.GetKeyDown("r")) {
+			RagdollToggle(standRot);
+		}
+	}
+
+	void RagdollToggle (float rotation) {
+		if (ragdoll) {
+			//transform.eulerAngles = new Vector3(0, 0, rotation);
+			rightLegMove.enabled = true;
+			leftLegMove.enabled = true;
+			rotationHinge.useLimits = true;
+			ragdoll = false;
+		}
+		else {
+			rightLegMove.enabled = false;
+			leftLegMove.enabled = false;
+			rotationHinge.useLimits = false;
+			ragdoll = true;
+		}
+
+	}
+	void LookForPlanets () {
+		float planetDistance = Mathf.Infinity;
+		foreach(GameObject planet in GameObject.FindGameObjectsWithTag("Planet")) {
+			if (Vector3.Distance(transform.position, planet.transform.position) < planetDistance) {
+				planetDistance = Vector3.Distance(transform.position, planet.transform.position);
+				nearestPlanet = planet.transform;
+			}
+			
 		}
 	}
 }

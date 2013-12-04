@@ -10,7 +10,7 @@ public class CamLerp : MonoBehaviour {
 	}
 	void Update () {
 		transform.position = Vector3.Lerp (transform.position, new Vector3(target.position.x, target.position.y, transform.position.z), Time.deltaTime*moveToSpeed);
-		//transform.eulerAngles = Vector3.Lerp(transform.eulerAngles, Vector3.forward*target.eulerAngles.z, Time.deltaTime*rotateToSpeed);
+		transform.eulerAngles = new Vector3(transform.eulerAngles.x, transform.eulerAngles.y, Mathf.MoveTowardsAngle(transform.eulerAngles.z, target.eulerAngles.z, Time.deltaTime*rotateToSpeed));
 
 	}
 }

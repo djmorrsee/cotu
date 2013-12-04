@@ -125,7 +125,8 @@ public class GeneratePlanet : MonoBehaviour
 		}
 		
 		gravity.gravityRadius = 3 * planetData.Radius;
-		gravity.gravityForce = -planetData.Mass;
+		//The gravity force makes the character physics a big wonky, lets make it a bit lower. this is just a temp fix
+		gravity.gravityForce = -planetData.Mass/20;
 		
 		renderer.material = mat;
 		
@@ -133,6 +134,8 @@ public class GeneratePlanet : MonoBehaviour
 		CircleCollider2D atmosphere = go.AddComponent<CircleCollider2D> ();
 		atmosphere.isTrigger = true;
 		atmosphere.radius = planetData.Radius * 3f;
+		//Add a planet tag to the planet, so the character can find the nearest one
+		go.tag = "Planet";
 	}
 
 	List<Vector3> GeneratePlanetVertices (int layers)
