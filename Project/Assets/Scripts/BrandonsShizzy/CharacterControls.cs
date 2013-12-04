@@ -4,7 +4,7 @@ using System.Collections;
 public class CharacterControls : MonoBehaviour {
 
 	public float movementForce, moveSpeed, jumpForce, crouchAmount, loopSensitivity;
-	public DistanceJoint2D rightLegMove, leftLegMove;
+	public SpringJoint2D rightLegMove, leftLegMove;
 	public float legMovement, yMoveMultiplier, yDownDivider, standStillHelp;
 	Vector2 startPosL, startPosR;
 	bool forward;
