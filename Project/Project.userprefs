@@ -1,12 +1,8 @@
 ﻿<Properties>
-  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Scripts\GeneratePlanet.cs">
+  <MonoDevelop.Ide.Workspace />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Scripts\PhysicsAnimation.cs">
     <Files>
-      <File FileName="Assets\Scripts\BrandonsShizzy\CharacterControls2.cs" Line="13" Column="56" />
-      <File FileName="Assets\Scripts\BrandonsShizzy\CharacterControls.cs" Line="93" Column="8" />
-      <File FileName="Assets\Scripts\BrandonsShizzy\CamLerp.cs" Line="13" Column="189" />
-      <File FileName="Assets\Scripts\Galaxy.cs" Line="1" Column="1" />
-      <File FileName="Assets\Scripts\GeneratePlanet.cs" Line="129" Column="44" />
+      <File FileName="Assets\Scripts\PhysicsAnimation.cs" Line="58" Column="96" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
